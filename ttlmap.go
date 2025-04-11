@@ -45,9 +45,9 @@ func (c *Cache[T, V]) Set(key T, data V, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	ttlVal := time.Now().Add(ttl)
-	if ttl == 0 {
-		ttlVal = time.Time{}
+	ttlVal := time.Time{}
+	if ttl != 0 {
+		ttlVal = time.Now().Add(ttl)
 	}
 
 	c.data[key] = CacheItem[V]{
