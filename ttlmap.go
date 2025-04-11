@@ -14,13 +14,13 @@ const (
 	processing              = "processing"
 )
 
-type cacheItem[V any] struct {
+type CacheItem[V any] struct {
 	data V
 	ttl  time.Time
 }
 
-type cache[K comparable, V any] struct {
-	data   map[K]cacheItem[V]
+type Cache[K comparable, V any] struct {
+	data   map[K]CacheItem[V]
 	mu     sync.RWMutex
 	stopCh chan struct{}
 
@@ -28,20 +28,20 @@ type cache[K comparable, V any] struct {
 	csMu sync.Mutex
 }
 
-func NewCache[T comparable, V any]() *cache[T, V] {
-	return &cache[T, V]{
-		data: make(map[T]cacheItem[V]),
+func NewCache[T comparable, V any]() *Cache[T, V] {
+	return &Cache[T, V]{
+		data: make(map[T]CacheItem[V]),
 		cs:   stopped,
 	}
 }
 
-func NewCacheWithCleaner[T comparable, V any](t int) *cache[T, V] {
+func NewCacheWithCleaner[T comparable, V any](t int) *Cache[T, V] {
 	c := NewCache[T, V]()
 	_ = c.RunCleaner(t)
 	return c
 }
 
-func (c *cache[T, V]) Set(key T, data V, ttl time.Duration) {
+func (c *Cache[T, V]) Set(key T, data V, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -50,20 +50,20 @@ func (c *cache[T, V]) Set(key T, data V, ttl time.Duration) {
 		ttlVal = time.Time{}
 	}
 
-	c.data[key] = cacheItem[V]{
+	c.data[key] = CacheItem[V]{
 		data: data,
 		ttl:  ttlVal,
 	}
 }
 
-func (c *cache[T, V]) Delete(key T) {
+func (c *Cache[T, V]) Delete(key T) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	delete(c.data, key)
 }
 
-func (c *cache[T, V]) Get(key T) (value V, ok bool) {
+func (c *Cache[T, V]) Get(key T) (value V, ok bool) {
 	var zero V
 	isExpired := false
 
@@ -90,7 +90,7 @@ func (c *cache[T, V]) Get(key T) (value V, ok bool) {
 	return item.data, true
 }
 
-func (c *cache[T, V]) RunCleaner(t int) error {
+func (c *Cache[T, V]) RunCleaner(t int) error {
 	c.csMu.Lock()
 	defer c.csMu.Unlock()
 
@@ -126,7 +126,7 @@ func (c *cache[T, V]) RunCleaner(t int) error {
 	return nil
 }
 
-func (c *cache[T, V]) StopCleaner() error {
+func (c *Cache[T, V]) StopCleaner() error {
 	c.csMu.Lock()
 	defer c.csMu.Unlock()
 
@@ -139,7 +139,7 @@ func (c *cache[T, V]) StopCleaner() error {
 	return nil
 }
 
-func (c *cache[T, V]) deleteExpired(key T) {
+func (c *Cache[T, V]) deleteExpired(key T) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
